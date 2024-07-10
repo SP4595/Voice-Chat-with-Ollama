@@ -4,6 +4,7 @@ from typing import Literal # Listeral 是给 IDLE (VSCODE) 的 hint， 告诉他
 from typing import Union # Union 是给 IDLE 的 hint, 标定输出的可能性
 import sys
 import os
+from queue import Queue
 
 # 获取当前脚本所在目录的父目录
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +26,7 @@ class OllamaThread(threading.Thread):
     def __init__(
             self, 
             key : str,      
+            shared_queue : Queue,
             lock = None,
             event = None,
             base_url : str = "http://localhost:11434",
@@ -63,7 +65,7 @@ class OllamaThread(threading.Thread):
         self.finish_flag = isFinish(self.finish_flag_lock, False) # 是否完成 flag
         self.wait = WaitingThread(self.finish_flag) # 转圈圈进程
         self.seed = seed
-
+        self.shared_queue = shared_queue
         if self.system_prompt != "": # if we got system_prompt
             self.message.append({"role" : "system", "content" : self.system_prompt})
 
@@ -118,11 +120,11 @@ class OllamaThread(threading.Thread):
 
         return response
         
-    def run (
-            self
-        ) -> None:
+    def text_run(
+        self
+    ) -> None:
         '''
-        Run the chatbot
+        Run the chatbot in text mod
         '''
         print("Type \"quit\" or \"q\" to quit")
         print()
@@ -134,6 +136,25 @@ class OllamaThread(threading.Thread):
             print()
             message = input("#**user**#:\n")
             print()
+            
+    def audio_run(
+        self
+    ) -> None:
+        '''
+        Run the chatbot in audio mod
+        '''
+        
+    def run(
+        self,
+        mod : Literal["text", "audio"] = "text"
+    ) -> None:
+        '''
+        Run the model in text or audio mode
+        '''
+        if mod == "text":
+            self.text_run()
+        else:
+            self.audio_run()
 
 if __name__ == '__main__':
 
