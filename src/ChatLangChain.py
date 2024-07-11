@@ -135,7 +135,7 @@ class OllamaThread(threading.Thread):
             
             for sentence in chat_response_splited:
                 self.output_generate_queue.put(sentence) # 入队
-            self.output_generate_queue.put(None) # None 标记结束
+            self.output_generate_queue.put(None) # None 标记结束 (这个 None 是为了让 语音播放知道这段话已经停止了，可以放开语音接受线程了！)
     
     def send_message_sync(
             self,
