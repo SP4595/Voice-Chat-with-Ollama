@@ -54,4 +54,38 @@ class VoiceRecognizer():
             return_str += segment.text + " "
             
         return return_str
+    
+    def recognize_wav(
+        self,
+        voice_file_path : str,
+        original_rate : int = 16000, 
+    ) -> str:
+        '''
+        ### Usage:
+        Convert voice to string
+        '''
+        
+
+        # 将录音数据转换为适合Whisper模型的格式（如果需要）
+        # 例如，使用ffmpeg将音频重采样到16000 Hz单声道
+        # 这部分代码未展示，假设输出文件为processed_output.wav
+
+        # 读取处理后的音频文件，使用Whisper模型进行语音识别
+        # with open(voice_file_path, "rb") as audio_file:
+        audio, sr = librosa.load(voice_file_path, sr=None)
+        segments, info = self.model.transcribe(audio, beam_size=5)
+
+        # print("Detected language: '%s' with probability %f" % (info.language, info.language_probability))
+
+        return_str = ""
+
+        for segment in segments:
+            print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+            return_str += segment.text + " "
+            
+        return return_str
+    
+if __name__ == "__main__":
+    a = VoiceRecognizer()
+    print(a.recognize_wav("./data/voice/M1903_TANABATA_JP.wav"))
         
