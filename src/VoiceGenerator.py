@@ -38,7 +38,7 @@ class VoiceGenerator:
     def text2audio(
         self,
         text : str,
-        text_language : str = 'zh',
+        text_language : str = 'auto',
         play_audio : bool = True
     ) -> requests.Response:
         '''

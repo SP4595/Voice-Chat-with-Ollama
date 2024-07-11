@@ -14,12 +14,30 @@ def custom_sentence_splitter(text : str) -> str:
     简单的语义分割方法
     '''
     # 定义中英文常见的分割符号，现在包括引号、括号等
-    separators = r'[，,；;。.\!\？\?：:]'
+    separators = r'[；;。.\!\？\?：:]'
     # 使用正则表达式分割文本
     parts = re.split(separators, text)
     # 去除空白，并过滤空字符串
     parts = [part.strip() for part in parts if part.strip() != '']
     return parts
+
+def filter_characters(
+    input_string : str, 
+    chars_to_remove : str = '-\"\'\\/[]\{\}【】()（）“”‘’——`·',
+    change_to : str = " "
+) -> str:
+    '''
+    删除指定字符
+    :param input_string: 输入的字符串
+    :param chars_to_remove: 要删除的字符
+    :param change_to: 要替换成的字符
+    :return: 处理后的字符串
+    '''
+    # 创建一个正则表达式模式，将所有需要删除的字符组合成一个字符类
+    pattern = f"[{re.escape(chars_to_remove)}]"
+    # 使用sub方法将这些字符替换为空字符串
+    filtered_str = re.sub(pattern, change_to, input_string)
+    return filtered_str
 
 class isFinish:
     def __init__(

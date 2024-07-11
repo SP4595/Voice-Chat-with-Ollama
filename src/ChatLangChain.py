@@ -24,7 +24,7 @@ import threading # python3 中用 threading 创建线程类
 import time
 import asyncio
 import numpy as np
-from lib.utils import custom_sentence_splitter
+from lib.utils import custom_sentence_splitter, filter_characters
 
 class OllamaThread(threading.Thread):
     def __init__(
@@ -127,12 +127,13 @@ class OllamaThread(threading.Thread):
                 return
             
             chat_response =  self.send_message_sync(content=content)
+            chat_response = filter_characters(
+                input_string = chat_response
+            )
             chat_response_splited = custom_sentence_splitter(chat_response) # 进行简单的split
             
             print(f"output:\n{chat_response_splited}")
-            
-            self.output_generate_queue.join()
-            
+             
             for sentence in chat_response_splited:
                 self.output_generate_queue.put(sentence) # 入队
             self.output_generate_queue.put(None) # None 标记结束 (这个 None 是为了让 语音播放知道这段话已经停止了，可以放开语音接受线程了！)

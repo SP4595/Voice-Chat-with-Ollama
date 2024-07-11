@@ -43,7 +43,7 @@ class Main(threading.Thread):
             output_generate_shared_queue = self.generate_shared_queue,
             process_done_event = self.process_done_event,
             base_url= "http://192.168.3.101:11434", # 服务器
-            model= "qwen2:7b-instruct-fp16",
+            model= "qwen2:72b",
             force_intialize_client = True
         )
         self.chat_thread.client.invoke([{"role" : "user", "content" : " "}]) # 强制初始化线程内部模型
