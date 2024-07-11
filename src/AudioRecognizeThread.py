@@ -10,22 +10,26 @@ import speechbrain as sb
 class AudioStreamThread(threading.Thread):
     """
     用于音频流处理和语音活动检测的线程。
-    注意，该线程不负责进行语音识别活动！
+    注意，该线程不负责进行语音识别！
     """
     def __init__(
         self, 
-        shared_queue : Queue, 
-        silence_duration_ms : int = 1000,
-        max_speaking_duration_ms : int = 15000, 
+        recongnize_shared_queue : Queue, 
+        process_done_event : threading.Event,
+        silence_duration_ms : int = 500,
+        max_speaking_duration_ms : int = 20000, 
         auto_stop : bool = True
     ) -> None:
         super().__init__()
-        self.shared_queue = shared_queue
+        self.recongnize_shared_queue = recongnize_shared_queue
         self.silence_duration_ms = silence_duration_ms
         self.max_speaking_duration_ms = max_speaking_duration_ms
         self.auto_stop = auto_stop
         self.vad = webrtcvad.Vad()
+        
+        self.process_done_event = process_done_event # event 开始
         self.vad.set_mode(3) # 0， 1， 2， 3 三个敏感模式， 3 最不敏感
+        self.finish = False # 结束识别了吗？
         
     def save_and_reset(
         self, 
@@ -35,7 +39,7 @@ class AudioStreamThread(threading.Thread):
         if total_frames:
             audio_data = b''.join(total_frames)
             audio_array = np.frombuffer(audio_data, dtype=np.int16)
-            self.shared_queue.put(audio_array)
+            self.recongnize_shared_queue.put(audio_array)
             total_frames.clear() # 更新 total_frames
 
     def run(self):
@@ -72,11 +76,13 @@ class AudioStreamThread(threading.Thread):
                 print("录音时间达到最大限制，正在保存数据")
                 self.save_and_reset(total_frames)
                 frame_buffer.clear()
+                self.finish = True
 
             if is_speech:
                 if not is_speaking:
                     print("检测到说话")
-                    is_speaking = True
+                    is_speaking = True # 标记结束
+        
             else:
                 if is_speaking and self.auto_stop:
                     if all(not speech for speech in frame_buffer):
@@ -84,10 +90,14 @@ class AudioStreamThread(threading.Thread):
                         is_speaking = False
                         self.save_and_reset(total_frames)
                         frame_buffer.clear()
-
-        stream.stop_stream()
-        stream.close()
-        audio_interface.terminate()
+                        self.finish = True # 标记结束
+                        
+            if self.finish:
+                # 一旦录音结束，立刻阻塞线程！
+                print("输入阻塞")
+                self.process_done_event.wait() # 如果 process event 是 未设置 （没有调用  .set()） 就开始阻塞线程
+                self.process_done_event.clear() # 停止阻塞线程（恢复为未设置，直到调用 .set()）
+                self.finish = False # 归位
 
 
 if __name__ == "__main__":

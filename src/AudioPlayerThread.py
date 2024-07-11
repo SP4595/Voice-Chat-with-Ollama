@@ -9,17 +9,32 @@ from pydub.playback import play
 class AudioPlayerThread(threading.Thread):
     def __init__(
         self,
-        task_queue : Queue[requests.Response]
+        task_queue : Queue[requests.Response],
+        process_done_event : threading.Event
     ) -> None:
         super().__init__()
         self.task_queue = task_queue
+        self.process_done_event = process_done_event
 
     def audioplay(self, response: requests.Response) -> None:
         # 从响应中加载音频数据到 BytesIO 缓冲区
         audio_data = BytesIO(response.content)
         # 使用 pydub 从 BytesIO 对象加载音频
         audio : AudioSegment = AudioSegment.from_file(audio_data, format="wav")
-        play(audio)
+        
+        #  获取音频的原始数据
+        raw_data = audio.raw_data
+
+        # 获取音频的采样率和样本宽度
+        sample_rate = audio.frame_rate
+        sample_width = audio.sample_width
+        num_channels = audio.channels
+
+        # 使用 simpleaudio 播放音频
+        play_obj = sa.play_buffer(raw_data, num_channels, sample_width, sample_rate) # 如果不wait的话这个默认开启新线程播放，本线程就继续执行了！
+
+        # 等待音频播放完毕
+        play_obj.wait_done()
 
     def run(self) -> None:
         while True:
@@ -28,5 +43,10 @@ class AudioPlayerThread(threading.Thread):
                 response = self.task_queue.get(timeout=3)  # 设置超时以允许检查运行标志
                 self.audioplay(response)
                 self.task_queue.task_done()  # 标记任务完成
+                if self.task_queue.empty(): # 空了
+                    print("结束输入阻塞")
+                    self.process_done_event.set() # 只在完成任务时设置一次event，闲置的时候不会设置event！
             except Empty:
+                # 队列为空
+                # 切记不要在这里设置event，因为这样每次 queue 中没有东西都会出问题！
                 continue  # 队列为空时继续循环

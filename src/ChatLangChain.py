@@ -17,7 +17,7 @@ parent_dir = os.path.dirname(current_dir)
 lib_dir = os.path.join(parent_dir)
 sys.path.append(lib_dir)
 
-from lib.utils import WaitingThread, isFinish
+from lib.utils import WaitingThread, isFinish, check_characters
 
 import json
 import threading # python3 中用 threading 创建线程类
@@ -32,9 +32,8 @@ class OllamaThread(threading.Thread):
             run_mod : Literal["text", "audio"],      
             input_recongnize_shared_queue : Queue[np.ndarray],
             output_generate_shared_queue : Queue[str],
+            process_done_event : threading.Event,
             key : str = "",
-            lock = None,
-            event = None,
             base_url : str = "http://localhost:11434",
             model : str = "phi3:3.8b",
             temperature : float = 0.2,
@@ -43,10 +42,14 @@ class OllamaThread(threading.Thread):
             max_tokens : int = 4*1024,
             stream : bool = True,
             seed : int = 4595,
-            prompt_path : str = "./data/prompts/chatbot.prompt"
+            prompt_path : str = "./data/prompts/chatbot.prompt",
+            force_intialize_client = False
         ) -> None:
         '''
+        ## Usage:
         create a chatbot and voice recognize
+        ## paras:
+        force_initialize_client: 这个变量是为了强制初始化
         '''
         super().__init__() # 继承 treading.Tread 对象来实现多线程
         self.run_mod : Literal["text", "audio"] = run_mod
@@ -82,9 +85,12 @@ class OllamaThread(threading.Thread):
         self.finish_flag_lock = threading.Lock() # 当这个线程作为主线程时使用
         self.finish_flag = isFinish(self.finish_flag_lock, False) # 是否完成 flag
         self.wait = WaitingThread(self.finish_flag) # 转圈圈进程
+        
+        self
 
         self.input_recongnize_queue = input_recongnize_shared_queue
         self.output_generate_queue = output_generate_shared_queue
+        self.process_done_event = process_done_event # 停止 event
         
         
 
@@ -115,6 +121,11 @@ class OllamaThread(threading.Thread):
             
             print(f"input:\n{content}")
             
+            if content == "" or not check_characters(content): # 如果是空字符串或者包含了非中日英, ASCII字符都会被认为是错误识别！
+                print("识别失败，重新识别！")
+                self.process_done_event.set() # 识别失败，重新识别
+                return
+            
             chat_response =  self.send_message_sync(content=content)
             chat_response_splited = custom_sentence_splitter(chat_response) # 进行简单的split
             
@@ -126,8 +137,7 @@ class OllamaThread(threading.Thread):
     def send_message_sync(
             self,
             content : str = " ",
-            self_print : bool = False,
-            need_memory : bool = True
+            self_print : bool = False
         ) -> str:
         '''
         (使用异步函数)
@@ -137,6 +147,7 @@ class OllamaThread(threading.Thread):
         '''
  
         response : str = ""
+    
         self.message.append({"role" : "user","content":content})
 
         self.finish_flag.need_wait() # flag设为True, 需要转圈圈等待
@@ -157,9 +168,6 @@ class OllamaThread(threading.Thread):
 
         if self_print:
             print() # 最后结尾的换行符
-
-        if need_memory:
-            self.message.append({"role" : "assistant","content":response})
         
         if not self_print:
             self.finish_flag.finish() # flag设为False, 停止转圈圈等待

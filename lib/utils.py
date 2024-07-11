@@ -1,8 +1,12 @@
 import threading # python3 中用 threading 创建线程类
 import time
-import pyaudio
-import wave
 import re
+import regex
+
+def check_characters(text):
+    # 正则表达式匹配中文、日文、英文以及所有ASCII字符，包括中日标点
+    pattern = regex.compile(r'^[\u0000-\u007F\u4E00-\u9FFF\u3040-\u30FF\u31F0-\u31FF\u3000-\u303F]+$')
+    return pattern.match(text) # 要求输入必须只包含以上字符！
 
 def custom_sentence_splitter(text : str) -> str:
     '''

@@ -1,7 +1,7 @@
 from VoiceGenerator import VoiceGenerator
 import os
 import sys
-from threading import Thread
+from threading import Thread, Event
 from collections import deque
 import threading
 from queue import Queue, Empty
@@ -12,7 +12,8 @@ class AudioGenerateThread(Thread):
     def __init__(
         self,
         generate_shared_queue : Queue[str],
-        audio_play_queue : Queue[Response] # Audio player 生成任务队列
+        audio_play_queue : Queue[Response], # Audio player 生成任务队列
+        process_done_event : Event # 停止 event
     ) -> None:
         '''
         用deque + split 模拟流式输出
@@ -22,6 +23,7 @@ class AudioGenerateThread(Thread):
         self.process_deque : deque[str] = deque() # deque 支持 iterable 直接插入 deque 故比 for 循环快很多
         self.task_queue = generate_shared_queue
         self.audio_play_queue = audio_play_queue
+        self.process_done_event = process_done_event # 停止 event
         
     def run(self) -> None:
         '''
