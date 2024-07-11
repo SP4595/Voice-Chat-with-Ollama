@@ -36,7 +36,7 @@ class AudioGenerateThread(Thread):
                     text = content,
                     play_audio = False
                 )
-                self.audio_play_queue.put(content)
+                self.audio_play_queue.put(response)
                  
             except Empty:
                 continue  # 队列为空时继续循环
