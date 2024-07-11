@@ -42,6 +42,7 @@ class VoiceRecognizer():
 
         # 读取处理后的音频文件，使用Whisper模型进行语音识别
         # with open(voice_file_path, "rb") as audio_file:
+        print("start recongnize")
         audio = self.preprocess_audio(audio, original_rate)
         segments, info = self.model.transcribe(audio, beam_size=5)
 
@@ -52,7 +53,7 @@ class VoiceRecognizer():
         for segment in segments:
             # print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
             return_str += segment.text + " "
-            
+        print("end recongnize")
         return return_str
     
     def recognize_wav(
@@ -87,5 +88,5 @@ class VoiceRecognizer():
     
 if __name__ == "__main__":
     a = VoiceRecognizer()
-    print(a.recognize_wav("./data/voice/M1903_TANABATA_JP.wav"))
+    print(a.recognize_wav("./data/voice/test.wav"))
         

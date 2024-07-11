@@ -38,8 +38,12 @@ class VoiceGenerator:
     def text2audio(
         self,
         text : str,
-        text_language : str
-    ) -> None:
+        text_language : str = 'zh',
+        play_audio : bool = True
+    ) -> requests.Response:
+        '''
+        Generate audio
+        '''
         data = {
             "refer_wav_path": self.promt_wav_path,
             "prompt_text": self.prompt_text,
@@ -54,7 +58,10 @@ class VoiceGenerator:
         
         # 确保请求成功
         if response.status_code == 200:
-            self.audioplay(response)
+            if play_audio:
+                self.audioplay(response)
+            
+            return response 
         
         
         
@@ -62,9 +69,6 @@ class VoiceGenerator:
         self,
         response : requests.Response
     ) -> None:
-        '''
-        Sound name has to be end with "wav"!
-        '''
     
         # 从响应中加载音频数据到 BytesIO 缓冲区
         audio_data = BytesIO(response.content)
@@ -89,6 +93,8 @@ class VoiceGenerator:
         
 if __name__ == "__main__":
     generator = VoiceGenerator()
-    text = "八十七年以前，我們的祖先在這塊大陸上創立了一個孕育於自由的新國家。他們主張人人生而平等，並為此而獻身。"
-    print("start")
-    generator.text2audio(text, "zh")
+    text = ""
+    while text != "end":
+        text = input("请输入测试文本:\n")
+        print("start")
+        generator.text2audio(text, "zh")

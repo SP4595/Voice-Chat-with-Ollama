@@ -8,7 +8,10 @@ from VoiceRecognizer import VoiceRecognizer
 import speechbrain as sb
 
 class AudioStreamThread(threading.Thread):
-    """用于音频流处理和语音活动检测的线程。"""
+    """
+    用于音频流处理和语音活动检测的线程。
+    注意，该线程不负责进行语音识别活动！
+    """
     def __init__(
         self, 
         shared_queue : Queue, 
@@ -22,7 +25,18 @@ class AudioStreamThread(threading.Thread):
         self.max_speaking_duration_ms = max_speaking_duration_ms
         self.auto_stop = auto_stop
         self.vad = webrtcvad.Vad()
-        self.vad.set_mode(0) # 0， 1， 2， 3 三个敏感模式， 0 最不敏感
+        self.vad.set_mode(3) # 0， 1， 2， 3 三个敏感模式， 3 最不敏感
+        
+    def save_and_reset(
+        self, 
+        total_frames : list
+    ) -> None:
+        """将记录的音频帧转换为numpy数组，存入队列，并重置帧列表。"""
+        if total_frames:
+            audio_data = b''.join(total_frames)
+            audio_array = np.frombuffer(audio_data, dtype=np.int16)
+            self.shared_queue.put(audio_array)
+            total_frames.clear() # 更新 total_frames
 
     def run(self):
         FORMAT = pyaudio.paInt16
@@ -75,17 +89,6 @@ class AudioStreamThread(threading.Thread):
         stream.close()
         audio_interface.terminate()
 
-    def save_and_reset(
-        self, 
-        total_frames : list
-    ) -> None:
-        """将记录的音频帧转换为numpy数组，存入队列，并重置帧列表。"""
-        if total_frames:
-            audio_data = b''.join(total_frames)
-            audio_array = np.frombuffer(audio_data, dtype=np.int16)
-            self.shared_queue.put(audio_array)
-            total_frames.clear() # 更新 total_frames
-
 
 if __name__ == "__main__":
     # 初始化共享队列
@@ -98,7 +101,5 @@ if __name__ == "__main__":
         if not shared_queue.empty():
             print("start read")
             get = shared_queue.get(timeout=1)
-            print("start process")
             print(f"[Queue length: {shared_queue.qsize()}]{recongnizer.recognize(get)}")
-            print("end process")
 

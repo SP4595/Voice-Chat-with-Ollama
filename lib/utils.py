@@ -2,6 +2,20 @@ import threading # python3 中用 threading 创建线程类
 import time
 import pyaudio
 import wave
+import re
+
+def custom_sentence_splitter(text : str) -> str:
+    '''
+    ### Usage:
+    简单的语义分割方法
+    '''
+    # 定义中英文常见的分割符号，现在包括引号、括号等
+    separators = r'[；;。.\!\？\?：:“”"———...……]'
+    # 使用正则表达式分割文本
+    parts = re.split(separators, text)
+    # 去除空白，并过滤空字符串
+    parts = [part.strip() for part in parts if part.strip() != '']
+    return parts
 
 class isFinish:
     def __init__(
