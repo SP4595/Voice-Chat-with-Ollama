@@ -9,7 +9,6 @@ from pydub import AudioSegment
 import simpleaudio as sa
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.manual_seed(4099)  # 比如说1122是女生音色
 
 
 

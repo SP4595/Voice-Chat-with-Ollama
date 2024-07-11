@@ -16,7 +16,7 @@ class AudioStreamThread(threading.Thread):
         self, 
         recongnize_shared_queue : Queue, 
         process_done_event : threading.Event,
-        silence_duration_ms : int = 500,
+        silence_duration_ms : int = 100,
         max_speaking_duration_ms : int = 60000, 
         auto_stop : bool = True
     ) -> None:
