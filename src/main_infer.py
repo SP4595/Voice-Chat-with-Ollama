@@ -22,8 +22,7 @@ class Main(threading.Thread):
             base_url= "http://192.168.3.101:11434", # 服务器
             model= "qwen2:7b-instruct-fp16"  
         )
-        self.chat_thread.send_message_sync("please output `Hello world` (do not output anything else!)") # 强制初始化模型
-        
+        self.chat_thread.send_message_sync("please output `Hello world` (do not output anything else!)", need_memory = False) # 强制初始化模型
         self.recongnizer_thread = AudioStreamThread(
             self.recongnize_shared_queue,
             silence_duration_ms=3000

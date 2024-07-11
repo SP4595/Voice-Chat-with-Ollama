@@ -62,6 +62,7 @@ class OllamaThread(threading.Thread):
             top_p = top_p,
             num_ctx = max_tokens, # 最大窗口长度设为1m
         )
+        
         self.temperatrue = temperature
         self.model = model
         self.top_p = top_p
@@ -103,22 +104,30 @@ class OllamaThread(threading.Thread):
         '''
         if not self.input_recongnize_queue.empty():
             chunks = []
+            
             while not self.input_recongnize_queue.empty():
                 chunk = self.input_recongnize_queue.get()
                 # print(f"Chunk from queue: {chunk.shape}")
-                chunks.append(chunk) # get all chunks are in queue (ndarray)      
+                chunks.append(chunk) # get all chunks are in queue (ndarray) 
+         
             total_audio = np.concatenate(chunks)
             content = self.voice_recongnizer.recognize(total_audio)
+            
             print(f"input:\n{content}")
+            
             chat_response =  self.send_message_sync(content=content)
             chat_response_splited = custom_sentence_splitter(chat_response) # 进行简单的split
+            
+            print(f"output:\n{chat_response_splited}")
+            
             for sentence in chat_response_splited:
                 self.output_generate_queue.put(sentence) # 入队
     
     def send_message_sync(
             self,
             content : str = " ",
-            self_print :bool = False
+            self_print : bool = False,
+            need_memory : bool = True
         ) -> str:
         '''
         (使用异步函数)
@@ -149,7 +158,8 @@ class OllamaThread(threading.Thread):
         if self_print:
             print() # 最后结尾的换行符
 
-        self.message.append({"role" : "assistant","content":response})
+        if need_memory:
+            self.message.append({"role" : "assistant","content":response})
         
         if not self_print:
             self.finish_flag.finish() # flag设为False, 停止转圈圈等待

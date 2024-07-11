@@ -16,7 +16,7 @@ class AudioStreamThread(threading.Thread):
         self, 
         shared_queue : Queue, 
         silence_duration_ms : int = 1000,
-        max_speaking_duration_ms : int = 60000, 
+        max_speaking_duration_ms : int = 15000, 
         auto_stop : bool = True
     ) -> None:
         super().__init__()

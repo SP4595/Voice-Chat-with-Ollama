@@ -11,7 +11,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 class VoiceRecognizer():
     def __init__(
         self,
-        model_size : str = "large-v3"
+        model_size : str = "medium"
     ) -> None:
         self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
     

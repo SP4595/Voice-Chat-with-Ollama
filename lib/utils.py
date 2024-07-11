@@ -10,7 +10,7 @@ def custom_sentence_splitter(text : str) -> str:
     简单的语义分割方法
     '''
     # 定义中英文常见的分割符号，现在包括引号、括号等
-    separators = r'[；;。.\!\？\?：:“”"———...……]'
+    separators = r'[，,；;。.\!\？\?：:]'
     # 使用正则表达式分割文本
     parts = re.split(separators, text)
     # 去除空白，并过滤空字符串

@@ -4,6 +4,7 @@ from pydub import AudioSegment
 import simpleaudio as sa
 import threading
 from queue import Queue, Empty # Empty 是一个 queue 专属异常
+from pydub.playback import play
 
 class AudioPlayerThread(threading.Thread):
     def __init__(
@@ -16,16 +17,9 @@ class AudioPlayerThread(threading.Thread):
     def audioplay(self, response: requests.Response) -> None:
         # 从响应中加载音频数据到 BytesIO 缓冲区
         audio_data = BytesIO(response.content)
-
         # 使用 pydub 从 BytesIO 对象加载音频
-        audio = AudioSegment.from_file(audio_data, format="wav")
-
-        # 直接从内存播放
-        wave_obj = sa.WaveObject(audio.raw_data, num_channels=audio.channels, bytes_per_sample=audio.sample_width, sample_rate=audio.frame_rate)
-
-        # 播放音频
-        play_obj = wave_obj.play()
-        play_obj.wait_done()  # 等待音频播放完成
+        audio : AudioSegment = AudioSegment.from_file(audio_data, format="wav")
+        play(audio)
 
     def run(self) -> None:
         while True:
