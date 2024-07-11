@@ -131,8 +131,11 @@ class OllamaThread(threading.Thread):
             
             print(f"output:\n{chat_response_splited}")
             
+            self.output_generate_queue.join()
+            
             for sentence in chat_response_splited:
                 self.output_generate_queue.put(sentence) # 入队
+            self.output_generate_queue.put(None) # None 标记结束
     
     def send_message_sync(
             self,

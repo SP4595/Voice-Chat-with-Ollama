@@ -34,11 +34,14 @@ class AudioGenerateThread(Thread):
             try:
                 # 从队列中获取string，如果队列为空则阻塞（这样比检查 empty 更安全！）
                 content = self.task_queue.get(timeout=3)  # 设置超时以允许检查运行标志
-                response = self.generater.text2audio(
-                    text = content,
-                    play_audio = False
-                )
-                self.audio_play_queue.put(response)
+                if content != None: # None 是 Chat 线程用于标记生成结尾用的，不要 request 过生成语音服务器！
+                    response = self.generater.text2audio(
+                        text = content,
+                        play_audio = False
+                    )
+                    self.audio_play_queue.put(response)
+                else:
+                    self.audio_play_queue.put(content) # 直接 put 到下一个阶段，下一个阶段会处理的！
                  
             except Empty:
                 continue  # 队列为空时继续循环

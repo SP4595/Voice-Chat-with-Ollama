@@ -41,11 +41,13 @@ class AudioPlayerThread(threading.Thread):
             try:
                 # 从队列中获取响应，如果队列为空则阻塞（这样比检查 empty 更安全！）
                 response = self.task_queue.get(timeout=3)  # 设置超时以允许检查运行标志
-                self.audioplay(response)
-                self.task_queue.task_done()  # 标记任务完成
-                if self.task_queue.empty(): # 空了
+                if response == None: # 空了(最后一个 None 标记结尾)
                     print("结束输入阻塞")
                     self.process_done_event.set() # 只在完成任务时设置一次event，闲置的时候不会设置event！
+                    continue # empty了
+                    
+                self.audioplay(response)
+                self.task_queue.task_done()  # 标记任务完成
             except Empty:
                 # 队列为空
                 # 切记不要在这里设置event，因为这样每次 queue 中没有东西都会出问题！
