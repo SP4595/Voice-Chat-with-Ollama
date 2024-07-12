@@ -11,9 +11,14 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 class VoiceRecognizer():
     def __init__(
         self,
-        model_size : str = "large-v3"
+        model_size : str = "distil-large-v3",
+        min_silence_duration_ms : int = 500
     ) -> None:
+        '''
+        min_silence_duration_ms: How much time of silence will be cliped?
+        '''
         self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
+        self.min_silence_duration_ms = min_silence_duration_ms
     
     def preprocess_audio(
         self,
@@ -44,7 +49,12 @@ class VoiceRecognizer():
         # with open(voice_file_path, "rb") as audio_file:
         print("start recongnize")
         audio = self.preprocess_audio(audio, original_rate)
-        segments, info = self.model.transcribe(audio, beam_size=5)
+        segments, info = self.model.transcribe(
+            audio, 
+            beam_size=5, 
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=self.min_silence_duration_ms)
+        )
 
         # print("Detected language: '%s' with probability %f" % (info.language, info.language_probability))
 
