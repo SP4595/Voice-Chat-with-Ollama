@@ -6,4 +6,4 @@
 
 ## 2. How to use
 
-&emsp; First, please download every required package and applications.
+&emsp; First, please download every required package and applications. You have to download `Ollama` and `GPT-so-vits` to use this projects.
