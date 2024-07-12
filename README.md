@@ -23,3 +23,11 @@ pip install requirements.txt
 ## 3. Change Voice
 
 &emsp; Please change voice in `./data/voice_text_pear` into your voice (`.wav format, 3-10 seconds`).
+
+## 4. Future work
+
+&emsp; 1. Add virtual Charactor for this LLM.
+
+&emsp; 2. Make this project better to use.
+
+&emsp; 3. Add GUI to it.
