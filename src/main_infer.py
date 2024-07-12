@@ -68,7 +68,7 @@ class Main(threading.Thread):
         self.player_thread.start()
             
 if __name__ == "__main__":
-    with open("./../config.json", "r") as f:
+    with open("config.json", "r") as f:
         config = json.load(f)
     main_thread = Main(
         model_name = config["OllamaModel"],
