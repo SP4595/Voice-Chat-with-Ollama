@@ -2,8 +2,24 @@
  
 ## 1. Introduction
 
-&emsp; This Project is let your LLM speak. We use Ollama + Langchain + fast-whisper + GPT-so-vits (API version) to generate a four stage pipline.
+&emsp; This Project is let your LLM speak. We use Ollama + Langchain + fast-whisper + GPT-so-vits (API version) to generate a four stage pipeline.
 
-## 2. How to use
+## 2. How to Use
 
-&emsp; First, please download every required package and applications. You have to download `Ollama` and `GPT-so-vits` to use this projects.
+&emsp; 0. Please make sure that the default python interpreter is above `python 3.10`. And your GPU memory should be larger than `8GB`.
+
+&emsp; 1. please download every required package. You may try to run:
+
+```bash
+pip install requirements.txt
+```
+
+&emsp; 2. You have to download `Ollama` and `GPT-so-vits` and start server to use this projects.
+
+&emsp; 3. Please change configeration of Ollama in config.json.
+
+&emsp; 4. just simply clip `run.bat` for Windows user or `run.sh` for Linux user to start chat.
+
+## 3. Change Voice
+
+&emsp; Please change voice in `./data/voice_text_pear` into your voice (`.wav format, 3-10 seconds`).
