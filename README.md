@@ -16,7 +16,7 @@ pip install requirements.txt
 
 &emsp; 2. You have to download `Ollama` and `GPT-so-vits` and start server to use this projects.
 
-&emsp; 3. Please change configeration of Ollama in config.json. And start `Ollama & GPT-so-vits` server
+&emsp; 3. Please change configeration of Ollama in config.json. And start `Ollama & GPT-so-vits` server.
 
 &emsp; 4. just simply clip `run.bat` for Windows user or `run.sh` for Linux user to start chat.
 
