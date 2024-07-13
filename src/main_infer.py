@@ -41,7 +41,6 @@ class Main(threading.Thread):
         
         self.recongnizer_thread = AudioStreamThread(
             recongnize_shared_queue = self.recongnize_shared_queue,
-            silence_duration_ms = 3000,
             process_done_event = self.process_done_event
         )
         

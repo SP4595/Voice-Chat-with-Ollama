@@ -117,7 +117,10 @@ class OllamaThread(threading.Thread):
                 chunks.append(chunk) # get all chunks are in queue (ndarray) 
          
             total_audio = np.concatenate(chunks)
-            content = self.voice_recongnizer.recognize(total_audio)
+            
+            content = ""
+            if len(total_audio) > 0:
+                content = self.voice_recongnizer.recognize(total_audio)
             
             print(f"input:\n{content}")
             
@@ -193,7 +196,7 @@ class OllamaThread(threading.Thread):
         '''
  
         response : str = ""
-        self.message.append({"role" : "user","content":content})
+        self.message.append({"role" : "user","content" : content})
 
         self.finish_flag.need_wait() # flag设为True, 需要转圈圈等待
         self.wait = WaitingThread(self.finish_flag) # 重新赋值转圈圈进程（每个进程只能start一次,）

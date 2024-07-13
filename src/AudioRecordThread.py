@@ -16,13 +16,15 @@ class AudioStreamThread(threading.Thread):
         self, 
         recongnize_shared_queue : Queue, 
         process_done_event : threading.Event,
-        silence_duration_ms : int = 10,
-        max_speaking_duration_ms : int = 10000, 
+        start_recognize_duration_bar_ms : int = 100,
+        end_recognize_duration_bar_ms : int = 1000,
+        max_speaking_duration_ms : int = 20000, 
         auto_stop : bool = True
     ) -> None:
         super().__init__()
         self.recongnize_shared_queue = recongnize_shared_queue
-        self.silence_duration_ms = silence_duration_ms
+        self.start_recognize_duration_bar_ms = start_recognize_duration_bar_ms
+        self.end_recognize_duration_bar_ms = end_recognize_duration_bar_ms
         self.max_speaking_duration_ms = max_speaking_duration_ms
         self.auto_stop = auto_stop
         self.vad = webrtcvad.Vad()
@@ -49,7 +51,8 @@ class AudioStreamThread(threading.Thread):
         CHUNK_DURATION_MS = 30
         CHUNK_SIZE = int(RATE * CHUNK_DURATION_MS / 1000)
         MAX_RECORD_CHUNKS = int(self.max_speaking_duration_ms / CHUNK_DURATION_MS) # 最大CHUNK记录长度
-        MAX_SILENCE_CHUNKS = int(self.silence_duration_ms / CHUNK_DURATION_MS) # 判断如果3秒内不说话就是停止录音
+        START_MAX_DURATION_CHUNKS = int(self.start_recognize_duration_bar_ms / CHUNK_DURATION_MS) # 判断如果3秒内不说话就是停止录音
+        END_MAX_DURATION_CHUNKS = int(self.end_recognize_duration_bar_ms / CHUNK_DURATION_MS) # 判断如果3秒内不说话就是停止录音
         
         audio_interface = pyaudio.PyAudio()
         
@@ -63,33 +66,42 @@ class AudioStreamThread(threading.Thread):
 
         print("## Start Recording ##")
         is_speaking = False
-        frame_buffer = collections.deque(maxlen=MAX_SILENCE_CHUNKS)
+        start_frame_buffer = collections.deque(maxlen=START_MAX_DURATION_CHUNKS)
+        end_frame_buffer = collections.deque(maxlen=END_MAX_DURATION_CHUNKS)
         total_frames = []
 
         while True:
+            
             frame = stream.read(CHUNK_SIZE)
+            
             is_speech = self.vad.is_speech(frame, RATE)
-            frame_buffer.append(is_speech)
-            total_frames.append(frame)
+            
+            start_frame_buffer.append(is_speech)
+            end_frame_buffer.append(is_speech)
+            
+            if len(start_frame_buffer) == start_frame_buffer.maxlen and all(speech for speech in start_frame_buffer): # 至少说 10 ms 才会被识别！(且必须等 buffer 已满)
+                if not is_speaking:
+                    print("# Speech start detect #")
+                    is_speaking = True # 标记开始
+                    start_frame_buffer.clear()
+            
+            if is_speaking and is_speech: # 必须要开始识别才能开始记录
+                total_frames.append(frame)
 
             if len(total_frames) >= MAX_RECORD_CHUNKS:
                 print("# Record Time Limit Reached, Start Saving ... #")
                 self.save_and_reset(total_frames)
-                frame_buffer.clear()
+                start_frame_buffer.clear()
+                end_frame_buffer.clear()
                 self.finish = True
-
-            if is_speech:
-                if not is_speaking:
-                    print("# Speech start detect, start iteration #")
-                    is_speaking = True # 标记结束
         
             else:
                 if is_speaking and self.auto_stop:
-                    if all(not speech for speech in frame_buffer):
+                    if len(end_frame_buffer) == end_frame_buffer.maxlen and all(not speech for speech in end_frame_buffer):
                         print("# Speech end detect #")
                         is_speaking = False
                         self.save_and_reset(total_frames)
-                        frame_buffer.clear()
+                        end_frame_buffer.clear()
                         self.finish = True # 标记结束
                         
             if self.finish:
