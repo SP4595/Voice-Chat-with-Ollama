@@ -1,7 +1,7 @@
 import warnings
 warnings.filterwarnings('ignore')
 from ChatLangChain import OllamaThread
-from AudioRecognizeThread import AudioStreamThread
+from AudioRecordThread import AudioStreamThread
 from AudioGenerateThread import AudioGenerateThread
 from queue import Queue
 import numpy as np

@@ -11,7 +11,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 class VoiceRecognizer():
     def __init__(
         self,
-        model_size : str = "distil-large-v3",
+        model_size : str = "large-v3",
         min_silence_duration_ms : int = 500
     ) -> None:
         '''
