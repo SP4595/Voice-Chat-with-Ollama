@@ -2,8 +2,27 @@ import threading # python3 中用 threading 创建线程类
 import time
 import re
 import regex
+import langid
 
-def check_characters(text):
+def filter_languages(
+    texts : str, 
+    allowed_languages=['zh', 'en', 'ja']
+) -> bool:
+    filtered_texts = []
+    for text in texts:
+        lang, _ = langid.classify(text)
+        if lang in allowed_languages:
+            filtered_texts.append(text)
+    return filtered_texts
+
+def is_allowed_language(
+    text : str, 
+    allowed_languages=['zh', 'en', 'ja']
+) -> bool:
+    lang, _ = langid.classify(text)
+    return lang in allowed_languages
+
+def check_characters(text : str) -> bool:
     # 正则表达式匹配中文、日文、英文以及所有ASCII字符，包括中日标点
     pattern = regex.compile(r'^[\u0000-\u007F\u4E00-\u9FFF\u3040-\u30FF\u31F0-\u31FF\u3000-\u303F]+$')
     return pattern.match(text) # 要求输入必须只包含以上字符！

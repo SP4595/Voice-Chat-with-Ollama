@@ -24,7 +24,7 @@ import threading # python3 中用 threading 创建线程类
 import time
 import asyncio
 import numpy as np
-from lib.utils import custom_sentence_splitter, filter_characters
+from lib.utils import custom_sentence_splitter, filter_characters, is_allowed_language
 
 class OllamaThread(threading.Thread):
     def __init__(
@@ -124,7 +124,7 @@ class OllamaThread(threading.Thread):
             
             print(f"input:\n{content}")
             
-            if content == "" or not check_characters(content): # 如果是空字符串或者包含了非中日英, ASCII字符都会被认为是错误识别！
+            if content == "" or not (check_characters(content) and is_allowed_language(content)): # 如果是空字符串或者包含了非中日英, ASCII字符都会被认为是错误识别！
                 print("# Recognize failed, please say again ! #")
                 self.process_done_event.set() # 识别失败，重新识别
                 return
