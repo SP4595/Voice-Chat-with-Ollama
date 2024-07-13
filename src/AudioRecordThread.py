@@ -5,7 +5,9 @@ import collections
 import numpy as np
 from queue import Queue
 from VoiceRecognizer import VoiceRecognizer
-import speechbrain as sb
+from vosk import Model, KaldiRecognizer
+from typing import Literal
+import torch
 
 class AudioStreamThread(threading.Thread):
     """
@@ -16,11 +18,16 @@ class AudioStreamThread(threading.Thread):
         self, 
         recongnize_shared_queue : Queue, 
         process_done_event : threading.Event,
-        start_recognize_duration_bar_ms : int = 60,
-        end_recognize_duration_bar_ms : int = 1000,
-        max_speaking_duration_ms : int = 20000, 
-        auto_stop : bool = True
+        start_recognize_duration_bar_ms : int = 30,
+        end_recognize_duration_bar_ms : int = 1500,
+        max_speaking_duration_ms : int = 10000, 
+        auto_stop : bool = True,
+        speech_detector : Literal["VAD", "DL"] = "DL"
     ) -> None:
+        '''
+        ### Paramaters:
+        speech_detector: Use VAD or Deep Learning to detect human speech. # Not used
+        '''
         super().__init__()
         self.recongnize_shared_queue = recongnize_shared_queue
         self.start_recognize_duration_bar_ms = start_recognize_duration_bar_ms
@@ -28,10 +35,14 @@ class AudioStreamThread(threading.Thread):
         self.max_speaking_duration_ms = max_speaking_duration_ms
         self.auto_stop = auto_stop
         self.vad = webrtcvad.Vad()
+        self.speech_detector = speech_detector
+
         
         self.process_done_event = process_done_event # event 开始
         self.vad.set_mode(3) # 0， 1， 2， 3 三个敏感模式， 3 最不敏感
         self.finish = False # 结束识别了吗？
+        
+    
         
     def save_and_reset(
         self, 
@@ -73,7 +84,6 @@ class AudioStreamThread(threading.Thread):
         while True:
             
             frame = stream.read(CHUNK_SIZE)
-            
             is_speech = self.vad.is_speech(frame, RATE)
             
             start_frame_buffer.append(is_speech)
