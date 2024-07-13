@@ -11,6 +11,7 @@ from requests import Response
 class AudioGenerateThread(Thread):
     def __init__(
         self,
+        absolute_pair_path : str, # 模仿声音的绝对路径，必填
         generate_shared_queue : Queue[str],
         audio_play_queue : Queue[Response], # Audio player 生成任务队列
         process_done_event : Event # 停止 event
@@ -19,7 +20,11 @@ class AudioGenerateThread(Thread):
         用deque + split 模拟流式输出
         '''
         super().__init__()
-        self.generater = VoiceGenerator()
+        self.absolute_pair_path = absolute_pair_path
+        self.generater = VoiceGenerator(
+            promt_text_path = f"{absolute_pair_path}\\text.txt",
+            promt_wav_path = f"{absolute_pair_path}\\voice.wav"
+        )
         self.process_deque : deque[str] = deque() # deque 支持 iterable 直接插入 deque 故比 for 循环快很多
         self.task_queue = generate_shared_queue
         self.audio_play_queue = audio_play_queue

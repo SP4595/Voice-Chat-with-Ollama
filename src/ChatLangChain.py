@@ -122,7 +122,7 @@ class OllamaThread(threading.Thread):
             print(f"input:\n{content}")
             
             if content == "" or not check_characters(content): # 如果是空字符串或者包含了非中日英, ASCII字符都会被认为是错误识别！
-                print("识别失败，重新识别！")
+                print("# Recognize failed, please say again ! #")
                 self.process_done_event.set() # 识别失败，重新识别
                 return
             

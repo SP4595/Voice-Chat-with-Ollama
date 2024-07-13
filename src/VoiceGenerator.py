@@ -19,10 +19,10 @@ class VoiceGenerator:
     '''
     def __init__(
         self,
+        promt_text_path : str,
+        promt_wav_path : str,
         url : str = "http://127.0.0.1:9880",
-        promt_text_path : str = "./data/voice_text_pear/text.txt",
-        promt_wav_path : str = "C:\\Users\\Administrator\\Desktop\\Voice-Chat-with-Ollama\\data\\voice_text_pear\\voice.wav",
-        prompt_language : str = "all_ja"
+        prompt_language : str = "auto" # 自动识别
     ) -> None:
         self.url = url # 记录
         self.promt_text_path = promt_text_path

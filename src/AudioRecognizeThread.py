@@ -61,7 +61,7 @@ class AudioStreamThread(threading.Thread):
             frames_per_buffer = CHUNK_SIZE
         )
 
-        print("开始录音，请说话")
+        print("## Start Recording ##")
         is_speaking = False
         frame_buffer = collections.deque(maxlen=MAX_SILENCE_CHUNKS)
         total_frames = []
@@ -73,20 +73,20 @@ class AudioStreamThread(threading.Thread):
             total_frames.append(frame)
 
             if len(total_frames) >= MAX_RECORD_CHUNKS:
-                print("录音时间达到最大限制，正在保存数据")
+                print("# Record Time Limit Reached, Start Saving ... #")
                 self.save_and_reset(total_frames)
                 frame_buffer.clear()
                 self.finish = True
 
             if is_speech:
                 if not is_speaking:
-                    print("检测到说话")
+                    print("# Speech start detect, start iteration #")
                     is_speaking = True # 标记结束
         
             else:
                 if is_speaking and self.auto_stop:
                     if all(not speech for speech in frame_buffer):
-                        print("检测到停止说话")
+                        print("# Speech end detect #")
                         is_speaking = False
                         self.save_and_reset(total_frames)
                         frame_buffer.clear()
@@ -94,7 +94,7 @@ class AudioStreamThread(threading.Thread):
                         
             if self.finish:
                 # 一旦录音结束，立刻阻塞线程！
-                print("输入阻塞")
+                print("# Record stop, Start processing #") # 阻塞线程
                 self.process_done_event.wait() # 如果 process event 是 未设置 （没有调用  .set()） 就开始阻塞线程
                 self.process_done_event.clear() # 停止阻塞线程（恢复为未设置，直到调用 .set()）
                 self.finish = False # 归位

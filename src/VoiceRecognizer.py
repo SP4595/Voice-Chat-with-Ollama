@@ -69,7 +69,8 @@ class VoiceRecognizer():
     def recognize_wav(
         self,
         voice_file_path : str,
-        original_rate : int = 16000, 
+        original_rate : int = 16000,
+        print_outcome : bool = True 
     ) -> str:
         '''
         ### Usage:
@@ -91,7 +92,8 @@ class VoiceRecognizer():
         return_str = ""
 
         for segment in segments:
-            print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+            if print_outcome:
+                print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
             return_str += segment.text + " "
             
         return return_str

@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings('ignore')
 from ChatLangChain import OllamaThread
 from AudioRecognizeThread import AudioStreamThread
 from AudioGenerateThread import AudioGenerateThread
@@ -18,11 +20,14 @@ parent_dir = os.path.dirname(current_dir)
 lib_dir = os.path.join(parent_dir)
 sys.path.append(lib_dir)
 
+VOICE_PATH = "./data/voice_text_pear/"
+ABS_VOICE_PATH = os.path.abspath(VOICE_PATH) # Get absolute path
+
 class Main(threading.Thread):
     def __init__(
         self,
         model_name : str = "phi3:3.8b",
-        base_url : str = "https://127.0.0.1:11434"
+        base_url : str = "https://127.0.0.1:11434",
     ) -> None:
         '''
         由四级 thread 流水线和三个 queue 组成的主类
@@ -49,12 +54,33 @@ class Main(threading.Thread):
             model= model_name,
             force_intialize_client = True
         )
+        
+        print("# Initializing LLM Server ... #")
+        
         self.chat_thread.client.invoke([{"role" : "user", "content" : " "}]) # 强制初始化线程内部模型
+        
+        print("# Initializing Voice Recognizer ... #")
+        
+        self.chat_thread.voice_recongnizer.recognize_wav(
+            voice_file_path = "./data/voice_text_pear/voice.wav",
+            print_outcome = False
+        ) # 强制初始化 recognizer
+        
+        
+        
         self.voice_generator_thread = AudioGenerateThread(
             generate_shared_queue = self.generate_shared_queue, 
             audio_play_queue=self.audio_play_queue,
-            process_done_event = self.process_done_event  
+            process_done_event = self.process_done_event,
+            absolute_pair_path = ABS_VOICE_PATH  
         )
+        
+        print("# Initializing TTS Server ... #")
+        
+        self.voice_generator_thread.generater.text2audio(
+            text = "a", 
+            play_audio = False
+        ) # 强制初始化 generator
         
         self.player_thread = AudioPlayerThread(
             self.audio_play_queue,
@@ -68,6 +94,7 @@ class Main(threading.Thread):
         self.player_thread.start()
             
 if __name__ == "__main__":
+    print("''''\nInithialize server...\n''''")
     with open("config.json", "r") as f:
         config = json.load(f)
     main_thread = Main(
