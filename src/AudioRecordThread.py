@@ -19,7 +19,7 @@ class AudioStreamThread(threading.Thread):
         recongnize_shared_queue : Queue, 
         process_done_event : threading.Event,
         start_recognize_duration_bar_ms : int = 30,
-        end_recognize_duration_bar_ms : int = 1500,
+        end_recognize_duration_bar_ms : int = 1000,
         max_speaking_duration_ms : int = 10000, 
         auto_stop : bool = True,
         speech_detector : Literal["VAD", "DL"] = "DL"
