@@ -16,7 +16,7 @@ class AudioStreamThread(threading.Thread):
         self, 
         recongnize_shared_queue : Queue, 
         process_done_event : threading.Event,
-        start_recognize_duration_bar_ms : int = 100,
+        start_recognize_duration_bar_ms : int = 60,
         end_recognize_duration_bar_ms : int = 1000,
         max_speaking_duration_ms : int = 20000, 
         auto_stop : bool = True

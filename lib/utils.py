@@ -23,7 +23,7 @@ def custom_sentence_splitter(text : str) -> str:
 
 def filter_characters(
     input_string : str, 
-    chars_to_remove : str = '-\"\'\\/[]\{\}【】()（）“”‘’——`·',
+    chars_to_remove : str = '-\"\\/[]\{\}【】()（）“”’——`·',
     change_to : str = " "
 ) -> str:
     '''

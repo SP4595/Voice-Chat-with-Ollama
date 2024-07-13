@@ -26,6 +26,8 @@ pip install requirements.txt
 
 ## 4. Future work
 
+&emsp; 0. Use Human Voice detect model to repace VAD model which is not good at Human Speech recognize.
+
 &emsp; 1. Add virtual Charactor for this LLM.
 
 &emsp; 2. Make this project better to use.
