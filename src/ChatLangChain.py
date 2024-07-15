@@ -30,7 +30,7 @@ class OllamaThread(threading.Thread):
     def __init__(
             self, 
             run_mod : Literal["text", "audio"],      
-            input_recongnize_shared_queue : Queue[np.ndarray],
+            input_recongnize_shared_queue : Queue[str],
             output_generate_shared_queue : Queue[str],
             process_done_event : threading.Event,
             key : str = "",
@@ -55,8 +55,6 @@ class OllamaThread(threading.Thread):
         self.run_mod : Literal["text", "audio"] = run_mod
         self.key = key
         self.base_url = base_url
-        
-        self.voice_recongnizer = VoiceRecognizer()
         
         self.client = ChatOllama(
             base_url = base_url,
@@ -109,26 +107,13 @@ class OllamaThread(threading.Thread):
         这个方法调用queue中的元素然后concate到一起识别，让llm生成，最后把llm生成的结果split成简单句交给语音生成线程
         '''
         if not self.input_recongnize_queue.empty():
-            chunks = []
+            content = ""
             
             while not self.input_recongnize_queue.empty():
-                chunk = self.input_recongnize_queue.get()
-                # print(f"Chunk from queue: {chunk.shape}")
-                chunks.append(chunk) # get all chunks are in queue (ndarray) 
-         
-            total_audio = np.concatenate(chunks)
-            
-            content = ""
-            if len(total_audio) > 0:
-                content = self.voice_recongnizer.recognize(total_audio)
+                content += self.input_recongnize_queue.get() + "。"
             
             print(f"input:\n{content}")
-            
-            if content == "" or not (check_characters(content) and is_allowed_language(content)): # 如果是空字符串或者包含了非中日英, ASCII字符都会被认为是错误识别！
-                print("# Recognize failed, please say again ! #")
-                self.process_done_event.set() # 识别失败，重新识别
-                return
-            
+
             chat_response =  self.send_message_sync(content=content)
             chat_response = filter_characters(
                 input_string = chat_response

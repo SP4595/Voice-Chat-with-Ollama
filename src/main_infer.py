@@ -33,7 +33,7 @@ class Main(threading.Thread):
         由四级 thread 流水线和三个 queue 组成的主类
         '''
         super().__init__()
-        self.recongnize_shared_queue : Queue[np.ndarray] = Queue() # Audio 识别任务队列
+        self.recongnize_shared_queue : Queue[str] = Queue() # Audio 识别任务队列
         self.generate_shared_queue : Queue[str] = Queue() # Text 生成 Audio 任务队列
         self.audio_play_queue : Queue[Response] = Queue()# Audio 播放队列
         self.process_done_event = threading.Event() # 确保 process 完成了
@@ -57,14 +57,6 @@ class Main(threading.Thread):
         print("# Initializing LLM Server ... #")
         
         self.chat_thread.client.invoke([{"role" : "user", "content" : " "}]) # 强制初始化线程内部模型
-        
-        print("# Initializing Voice Recognizer ... #")
-        
-        self.chat_thread.voice_recongnizer.recognize_wav(
-            voice_file_path = "./data/voice_text_pear/voice.wav",
-            print_outcome = False
-        ) # 强制初始化 recognizer
-        
         
         
         self.voice_generator_thread = AudioGenerateThread(

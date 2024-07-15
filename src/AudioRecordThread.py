@@ -1,137 +1,92 @@
 import threading
 import pyaudio
-import webrtcvad
-import collections
 import numpy as np
 from queue import Queue
-from VoiceRecognizer import VoiceRecognizer
 from vosk import Model, KaldiRecognizer
-from typing import Literal
 import torch
+import os
+import sys
+import VoiceRecognizer
+import json
+
+# 获取当前脚本所在目录的父目录
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+
+# 将父目录添加到系统路径
+sys.path.append(parent_dir)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class AudioStreamThread(threading.Thread):
     """
     用于音频流处理和语音活动检测的线程。
-    注意，该线程不负责进行语音识别！
+    注意，该线程将会负责进行语音识别！
     """
     def __init__(
         self, 
-        recongnize_shared_queue : Queue, 
+        recongnize_shared_queue : Queue[str], 
         process_done_event : threading.Event,
-        start_recognize_duration_bar_ms : int = 30,
-        end_recognize_duration_bar_ms : int = 1000,
-        max_speaking_duration_ms : int = 10000, 
         auto_stop : bool = True,
-        speech_detector : Literal["VAD", "DL"] = "DL"
     ) -> None:
-        '''
-        ### Paramaters:
-        speech_detector: Use VAD or Deep Learning to detect human speech. # Not used
-        '''
         super().__init__()
         self.recongnize_shared_queue = recongnize_shared_queue
-        self.start_recognize_duration_bar_ms = start_recognize_duration_bar_ms
-        self.end_recognize_duration_bar_ms = end_recognize_duration_bar_ms
-        self.max_speaking_duration_ms = max_speaking_duration_ms
+        self.process_done_event = process_done_event
         self.auto_stop = auto_stop
-        self.vad = webrtcvad.Vad()
-        self.speech_detector = speech_detector
-
         
-        self.process_done_event = process_done_event # event 开始
-        self.vad.set_mode(3) # 0， 1， 2， 3 三个敏感模式， 3 最不敏感
-        self.finish = False # 结束识别了吗？
+        # 设置音频参数
+        self.RATE = 16000
         
-    
+        # 初始化 Vosk 语音识别模型
+        self.model = Model("./model/vosk-model-small-cn-0.22")
+        self.rec = KaldiRecognizer(self.model, self.RATE) 
         
-    def save_and_reset(
-        self, 
-        total_frames : list
-    ) -> None:
-        """将记录的音频帧转换为numpy数组，存入队列，并重置帧列表。"""
-        if total_frames:
-            audio_data = b''.join(total_frames)
-            audio_array = np.frombuffer(audio_data, dtype=np.int16)
-            self.recongnize_shared_queue.put(audio_array)
-            total_frames.clear() # 更新 total_frames
-
     def run(self):
         FORMAT = pyaudio.paInt16
         CHANNELS = 1
-        RATE = 16000
-        CHUNK_DURATION_MS = 30
-        CHUNK_SIZE = int(RATE * CHUNK_DURATION_MS / 1000)
-        MAX_RECORD_CHUNKS = int(self.max_speaking_duration_ms / CHUNK_DURATION_MS) # 最大CHUNK记录长度
-        START_MAX_DURATION_CHUNKS = int(self.start_recognize_duration_bar_ms / CHUNK_DURATION_MS) # 判断如果3秒内不说话就是停止录音
-        END_MAX_DURATION_CHUNKS = int(self.end_recognize_duration_bar_ms / CHUNK_DURATION_MS) # 判断如果3秒内不说话就是停止录音
-        
         audio_interface = pyaudio.PyAudio()
-        
+
+        # 打开音频流
         stream = audio_interface.open(
-            format = FORMAT, 
-            channels = CHANNELS, 
-            rate = RATE,
-            input = True,
-            frames_per_buffer = CHUNK_SIZE
+            format=FORMAT, 
+            channels=CHANNELS, 
+            rate=self.RATE,
+            input=True,
+            frames_per_buffer=8000
         )
 
         print("## Start Recording ##")
-        is_speaking = False
-        start_frame_buffer = collections.deque(maxlen=START_MAX_DURATION_CHUNKS)
-        end_frame_buffer = collections.deque(maxlen=END_MAX_DURATION_CHUNKS)
-        total_frames = []
 
         while True:
-            
-            frame = stream.read(CHUNK_SIZE)
-            is_speech = self.vad.is_speech(frame, RATE)
-            
-            start_frame_buffer.append(is_speech)
-            end_frame_buffer.append(is_speech)
-            
-            if len(start_frame_buffer) == start_frame_buffer.maxlen and all(speech for speech in start_frame_buffer): # 至少说 10 ms 才会被识别！(且必须等 buffer 已满)
-                if not is_speaking:
-                    print("# Speech start detect #")
-                    is_speaking = True # 标记开始
-                    start_frame_buffer.clear()
-            
-            if is_speaking and is_speech: # 必须要开始识别才能开始记录
-                total_frames.append(frame)
+            frame = stream.read(4000, exception_on_overflow=False)
+            if self.rec.AcceptWaveform(frame):
+                # 识别到完整的语句
+                result : dict[str, str] = json.loads(self.rec.Result())
+                if result.get('text', ''):
+                    user_instruct = result['text'].replace(" ", "")
+                    if len(user_instruct) > 1:
+                        self.recongnize_shared_queue.put(user_instruct)
+                        if self.auto_stop:
+                            self.process_done_event.wait() # 如果 process event 是 未设置 （没有调用  .set()） 就开始阻塞线程
+                            self.process_done_event.clear() # 停止阻塞线程（恢复为未设置，直到调用 .set()）
 
-            if len(total_frames) >= MAX_RECORD_CHUNKS:
-                print("# Record Time Limit Reached, Start Saving ... #")
-                self.save_and_reset(total_frames)
-                start_frame_buffer.clear()
-                end_frame_buffer.clear()
-                self.finish = True
-        
-            else:
-                if is_speaking and self.auto_stop:
-                    if len(end_frame_buffer) == end_frame_buffer.maxlen and all(not speech for speech in end_frame_buffer):
-                        print("# Speech end detect #")
-                        is_speaking = False
-                        self.save_and_reset(total_frames)
-                        end_frame_buffer.clear()
-                        self.finish = True # 标记结束
-                        
-            if self.finish:
-                # 一旦录音结束，立刻阻塞线程！
-                print("# Record stop, Start processing #") # 阻塞线程
-                self.process_done_event.wait() # 如果 process event 是 未设置 （没有调用  .set()） 就开始阻塞线程
-                self.process_done_event.clear() # 停止阻塞线程（恢复为未设置，直到调用 .set()）
-                self.finish = False # 归位
+        # 后续有停止手段了再说 #
+        # stream.stop_stream()
+        #stream.close()
+        # audio_interface.terminate()
+        # print("## Recording Stopped ##")
+
+
 
 
 if __name__ == "__main__":
     # 初始化共享队列
     shared_queue = Queue(maxsize=4)
-    recongnizer = VoiceRecognizer()
     # 启动音频处理线程
-    audio_thread = AudioStreamThread(shared_queue)
+    audio_thread = AudioStreamThread(shared_queue, threading.Event(), auto_stop=False)
     audio_thread.start()
     while True:
         if not shared_queue.empty():
             print("start read")
-            get = shared_queue.get(timeout=1)
-            print(f"[Queue length: {shared_queue.qsize()}]{recongnizer.recognize(get)}")
+            print(f"[Queue length: {shared_queue.qsize()}]{shared_queue.get(timeout=1)}")
 
