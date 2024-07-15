@@ -10,4 +10,3 @@ Requests==2.32.3
 simpleaudio==1.0.4
 torch==2.3.1+cu121
 vosk==0.3.45
-webrtcvad==2.0.10
