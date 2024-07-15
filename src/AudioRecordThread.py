@@ -52,18 +52,25 @@ class AudioStreamThread(threading.Thread):
             channels=CHANNELS, 
             rate=self.RATE,
             input=True,
-            frames_per_buffer=8000
+            frames_per_buffer=8000 # 8000 个 INT16， i.e., 16000 个记录点，1秒钟
         )
 
         print("## Start Recording ##")
 
         while True:
-            frame = stream.read(4000, exception_on_overflow=False)
-            if self.rec.AcceptWaveform(frame):
+            frame = stream.read(4000, exception_on_overflow=False) # 只取半秒钟
+            if self.rec.AcceptWaveform(frame): # 如果识别到frame内有完整的句子就会开始识别。
+                '''
+                AcceptWaveform 实现：
+                这个函数其实是c语言实现的。这个c函数的实现是这样子的：
+                1. 内置一个buffer，所有传给他的frame都会记在buffer上面
+                2. 如果最后发现可以识别到完整的句子就会返回 True，否则一直返回 False
+                '''
                 # 识别到完整的语句
                 result : dict[str, str] = json.loads(self.rec.Result())
                 if result.get('text', ''):
                     user_instruct = result['text'].replace(" ", "")
+                    # print("user instruct:\n",result)
                     if len(user_instruct) > 1:
                         self.recongnize_shared_queue.put(user_instruct)
                         if self.auto_stop:
